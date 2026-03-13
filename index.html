@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNIPPETS-G4</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+    <section id="view-login" class="view active">
+        <div class="auth-container">
+            <div class="brand">
+                <div class="icon-box"><i data-lucide="code-2"></i></div>
+                <h1>SNIPPETS-G4</h1>
+                <p>Gestión de Fragmentos Técnicos</p>
+            </div>
+            <div class="card">
+                <h2>Iniciar Sesión</h2>
+                <p class="subtitle">Ingresa tus credenciales para acceder</p>
+                <form onsubmit="navigateTo(event, 'view-dashboard')">
+                    <div class="field">
+                        <label>Email</label>
+                        <input type="email" placeholder="tu@email.com" required>
+                    </div>
+                    <div class="field">
+                        <label>Contraseña</label>
+                        <input type="password" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn-primary">
+                        <i data-lucide="log-in"></i> Iniciar Sesión
+                    </button>
+                </form>
+                <p class="footer-text">¿No tienes cuenta? <a href="#" onclick="navigateTo(null, 'view-register')">Regístrate aquí</a></p>
+            </div>
+        </div>
+    </section>
+
+    <section id="view-register" class="view">
+        <div class="auth-container">
+            <div class="brand">
+                <div class="icon-box"><i data-lucide="code-2"></i></div>
+                <h1>SNIPPETS-G4</h1>
+            </div>
+            <div class="card">
+                <h2>Crear Cuenta</h2>
+                <form onsubmit="navigateTo(event, 'view-login')">
+                    <div class="field">
+                        <label>Nombre completo</label>
+                        <input type="text" placeholder="Juan Pérez" required>
+                    </div>
+                    <div class="field">
+                        <label>Email</label>
+                        <input type="email" placeholder="tu@email.com" required>
+                    </div>
+                    <div class="field">
+                        <label>Contraseña</label>
+                        <input type="password" required>
+                        <span class="hint">Mínimo 6 caracteres</span>
+                    </div>
+                    <div class="field">
+                        <label>Confirmar contraseña</label>
+                        <input type="password" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Crear Cuenta</button>
+                </form>
+                <p class="footer-text">¿Ya tienes cuenta? <a href="#" onclick="navigateTo(null, 'view-login')">Inicia sesión</a></p>
+            </div>
+        </div>
+    </section>
+
+    <section id="view-dashboard" class="view">
+        <header class="main-header">
+            <div class="header-content">
+                <div class="logo">
+                    <h2>SNIPPETS-G4</h2>
+                    <span>Gestión de Fragmentos Técnicos</span>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-primary" onclick="navigateTo(null, 'view-new-snippet')">
+                        <i data-lucide="plus"></i> Nuevo Snippet
+                    </button>
+                    <div class="user-avatar"><i data-lucide="user"></i></div>
+                    <button id="logout-btn" class="btn-logout">
+                        <i data-lucide="log-out"></i>
+                        <span>Cerrar Sesión</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container">
+            <div class="filters">
+                <div class="search-bar">
+                    <i data-lucide="search"></i>
+                    <input type="text" placeholder="Buscar snippets...">
+                </div>
+                <select><option>Todos los lenguajes</option></select>
+                <select><option>Todos</option></select>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active">Mis Snippets</button>
+                <button class="tab"><i data-lucide="users"></i> Comunidad</button>
+            </div>
+
+            <div class="grid">
+                <div class="snippet-card">
+                    <div class="card-header">
+                        <h3>React useState Hook <i data-lucide="globe" class="icon-sm"></i></h3>
+                        <span class="badge">JavaScript</span>
+                    </div>
+                    <p>Ejemplo básico del hook useState en React</p>
+                    <div class="code-preview">
+                        <code>import { useState } from 'react'; ...</code>
+                    </div>
+                    <div class="card-footer">
+                        <div class="tags">
+                            <span>hooks</span><span>react</span>
+                        </div>
+                        <div class="actions">
+                            <button class="btn-icon"><i data-lucide="copy"></i> Copiar</button>
+                            <button class="btn-icon-plain"><i data-lucide="edit"></i></button>
+                            <button class="btn-icon-plain"><i data-lucide="trash-2"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </section>
+
+    <section id="view-new-snippet" class="view">
+        <header class="main-header">
+            <div class="header-content">
+                <div class="back-link" onclick="navigateTo(null, 'view-dashboard')">
+                    <i data-lucide="arrow-left"></i> Volver
+                </div>
+                <h2>Nuevo Snippet</h2>
+            </div>
+        </header>
+        <main class="container-sm">
+            <div class="card form-card">
+                <h3>Información Básica</h3>
+                <div class="field">
+                    <label>Título *</label>
+                    <input type="text" placeholder="Ej: React useState Hook">
+                </div>
+                <div class="field">
+                    <label>Descripción</label>
+                    <textarea placeholder="Breve descripción del snippet"></textarea>
+                </div>
+                <div class="row">
+                    <div class="field">
+                        <label>Lenguaje *</label>
+                        <select><option>JavaScript</option></select>
+                    </div>
+                    <div class="field">
+                        <label>Categoría</label>
+                        <input type="text" placeholder="Ej: React, Database">
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Etiquetas</label>
+                    <input type="text" placeholder="Separadas por comas">
+                </div>
+                <div class="switch-field">
+                    <span>Snippet público</span>
+                    <label class="switch">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="card editor-card">
+                <h3>Código *</h3>
+                <div class="editor-header">
+                    <button class="active">Editar</button>
+                    <button>Vista Previa</button>
+                </div>
+                <textarea class="code-editor" placeholder="Escribe o pega tu código aquí..."></textarea>
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="navigateTo(null, 'view-dashboard')">Cancelar</button>
+                    <button class="btn-primary"><i data-lucide="save"></i> Guardar Snippet</button>
+                </div>
+            </div>
+        </main>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
