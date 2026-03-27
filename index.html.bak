@@ -486,23 +486,6 @@
   </div>
 </div>
 
-<!-- Reset Password Modal -->
-<div id="modal-reset" class="modal-backdrop hidden">
-  <div class="modal-box">
-    <h2 class="text-lg font-bold text-gray-900 mb-1">Nueva contraseña</h2>
-    <p class="text-sm text-gray-500 mb-5">Ingresa y confirma tu nueva contraseña</p>
-    <input id="reset-password" type="password" placeholder="Nueva contraseña (mín. 6 caracteres)"
-      class="w-full px-4 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-400 mb-3"
-      style="background:#F3F4F6; border:1px solid #E5E7EB;" />
-    <input id="reset-password-confirm" type="password" placeholder="Confirmar contraseña"
-      class="w-full px-4 py-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-400 mb-4"
-      style="background:#F3F4F6; border:1px solid #E5E7EB;" />
-    <button onclick="handleResetPassword()"
-      class="w-full py-3 rounded-xl text-white text-sm font-medium"
-      style="background:#111827;">Guardar nueva contraseña</button>
-  </div>
-</div>
-
 <!-- Resend Verification Modal -->
 <div id="modal-resend" class="modal-backdrop hidden">
   <div class="modal-box">
@@ -645,10 +628,7 @@
 
 <!-- ===================== JAVASCRIPT ===================== -->
 <script>
-const _host = window.location.hostname;
-const API_BASE = (_host === 'localhost' || _host === '127.0.0.1' || _host.startsWith('192.168.') || _host.startsWith('10.'))
-  ? '/api'
-  : 'http://159.89.190.205/api';   // ← cambiar a https://subdominio.duckdns.org/api cuando tengas dominio
+const API_BASE = '/api';
 let currentUser = null;
 let currentTab = 'my';
 let currentRankTab = 'snippets';
@@ -812,7 +792,7 @@ async function loadCategories() {
     items.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.id;
-      opt.textContent = c.nombre;
+      opt.textContent = c.name;
       sel.appendChild(opt);
     });
   } catch(e) {}
@@ -830,10 +810,6 @@ window.addEventListener('DOMContentLoaded', () => {
   if (params.get('verificado') === '1') {
     document.getElementById('banner-verificacion').classList.remove('hidden');
     history.replaceState(null, '', location.pathname + location.hash);
-  }
-
-  if (params.get('reset_token')) {
-    document.getElementById('modal-reset').classList.remove('hidden');
   }
 
   if (currentUser) {
@@ -861,7 +837,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function updateNavUser() {
   if (!currentUser) return;
-  const name = currentUser.nombre || currentUser.username || currentUser.email || 'U';
+  const name = currentUser.name || currentUser.username || currentUser.email || 'U';
   const btn = document.getElementById('user-avatar-btn');
   const span = document.getElementById('nav-initials');
   if (currentUser.avatar) {
@@ -989,31 +965,6 @@ async function handleForgotPassword() {
   }
 }
 
-async function handleResetPassword() {
-  const params = new URLSearchParams(location.search);
-  const token = params.get('reset_token');
-  const email = params.get('email');
-  const password = document.getElementById('reset-password').value;
-  const passwordConfirm = document.getElementById('reset-password-confirm').value;
-
-  if (!password || !passwordConfirm) { showToast('Completa ambos campos', 'error'); return; }
-  if (password !== passwordConfirm) { showToast('Las contraseñas no coinciden', 'error'); return; }
-  if (password.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres', 'error'); return; }
-
-  try {
-    const data = await apiFetch('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ token, email, password, password_confirmation: passwordConfirm })
-    });
-    showToast(data.message || 'Contraseña restablecida correctamente');
-    document.getElementById('modal-reset').classList.add('hidden');
-    history.replaceState(null, '', location.pathname);
-    showScreen('login');
-  } catch(err) {
-    showToast(err.message || 'Error al restablecer la contraseña', 'error');
-  }
-}
-
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function switchTab(tab) {
   currentTab = tab;
@@ -1038,7 +989,7 @@ function switchTab(tab) {
 // ── Normalize snippet (tags objects → strings) ────────────────────────────────
 function normalizeSnippet(s) {
   if (s && Array.isArray(s.tags)) {
-    s.tags = s.tags.map(t => (typeof t === 'string' ? t : (t.nombre || t.slug || '')));
+    s.tags = s.tags.map(t => (typeof t === 'string' ? t : (t.name || t.slug || '')));
   }
   // author may be under 'user' key
   if (s && s.user && !s.author) s.author = s.user;
@@ -1066,12 +1017,12 @@ function applyFilters() {
   const vis = document.getElementById('filter-visibility').value;
   const search = document.getElementById('search-input').value.toLowerCase();
   filteredSnippets = allSnippets.filter(s => {
-    const sLang = (s.lenguaje || s.lang || '').toLowerCase();
-    const sTitle = (s.titulo || '').toLowerCase();
-    const sDesc = (s.descripcion || '').toLowerCase();
+    const sLang = (s.language || s.lang || '').toLowerCase();
+    const sTitle = (s.title || '').toLowerCase();
+    const sDesc = (s.description || '').toLowerCase();
     const sTags = (s.tags || []).join(' ').toLowerCase();
     const matchLang = !lang || sLang === lang || sLang.startsWith(lang);
-    const matchVis = !vis || (s.visibilidad === vis);
+    const matchVis = !vis || (s.visibility === vis);
     const matchSearch = !search || sTitle.includes(search) || sDesc.includes(search) || sTags.includes(search);
     return matchLang && matchVis && matchSearch;
   });
@@ -1130,7 +1081,7 @@ function getLangBadge(lang) {
 }
 
 function getPublicIcon(snippet) {
-  const isPublic = snippet.visibilidad === 'public';
+  const isPublic = snippet.visibility === 'public';
   if (isPublic) return `<svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color:#10B981;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/></svg>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>`;
 }
@@ -1142,18 +1093,18 @@ function escapeHtml(str) {
 function renderMyCard(s) {
   const id = s.id || s._id;
   const tags = (s.tags || []).slice(0, 4).map(t => `<span class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">${escapeHtml(t)}</span>`).join('');
-  const codePreview = escapeHtml((s.codigo || s.content || '').split('\n').slice(0, 5).join('\n'));
+  const codePreview = escapeHtml((s.code || s.content || '').split('\n').slice(0, 5).join('\n'));
   return `
   <div class="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-3 card-hover" style="border:1px solid #F3F4F6;">
     <div class="flex items-start justify-between gap-2">
       <div class="flex items-center gap-1.5 min-w-0">
         ${getPublicIcon(s)}
-        <h3 class="font-semibold text-gray-900 text-sm truncate">${escapeHtml(s.titulo)}</h3>
+        <h3 class="font-semibold text-gray-900 text-sm truncate">${escapeHtml(s.title)}</h3>
       </div>
-      ${getLangBadge(s.lenguaje || s.lang)}
+      ${getLangBadge(s.language || s.lang)}
     </div>
-    ${s.descripcion ? `<p class="text-xs text-gray-500 line-clamp-2">${escapeHtml(s.descripcion)}</p>` : ''}
-    <pre class="code-block"><code class="${s.lenguaje || ''}">${codePreview}</code></pre>
+    ${s.description ? `<p class="text-xs text-gray-500 line-clamp-2">${escapeHtml(s.description)}</p>` : ''}
+    <pre class="code-block"><code class="${s.language || ''}">${codePreview}</code></pre>
     ${tags ? `<div class="flex flex-wrap gap-1">${tags}</div>` : ''}
     <div class="flex items-center justify-between pt-1 border-t" style="border-color:#F3F4F6;">
       <div class="flex items-center gap-2">
@@ -1208,12 +1159,12 @@ function getInitials(name) {
 function renderCommunityCard(s) {
   const id = s.id || s._id;
   const author = s.author || s.user || {};
-  const authorName = author.nombre || author.username || 'Usuario';
+  const authorName = author.name || author.username || 'Usuario';
   const authorId = author.id || author._id || '';
   const isOwn = currentUser && authorId && (authorId == (currentUser.id || currentUser._id));
   const tags = (s.tags || []).slice(0, 4).map(t => '<span style="background:#EEF2FF;color:#6366F1;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500;">#' + escapeHtml(t) + '</span>').join('');
-  const codePreview = escapeHtml((s.codigo || s.content || '').split('\n').slice(0, 5).join('\n'));
-  const stars = s.calificacion_promedio || s.rating || 0;
+  const codePreview = escapeHtml((s.code || s.content || '').split('\n').slice(0, 5).join('\n'));
+  const stars = s.avg_rating || s.rating || 0;
   const authorAvatar = author.avatar
     ? '<img src="/storage/' + escapeHtml(author.avatar) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />'
     : '<span style="color:#fff;font-size:11px;font-weight:700;">' + getInitials(authorName) + '</span>';
@@ -1249,14 +1200,14 @@ function renderCommunityCard(s) {
     + '</div>'
     + '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">'
     + followBtn
-    + getLangBadge(s.lenguaje || s.lang)
+    + getLangBadge(s.language || s.lang)
     + '</div>'
     + '</div>'
     + '<div>'
-    + '<h3 style="font-weight:600;color:#111827;font-size:14px;margin-bottom:4px;">' + escapeHtml(s.titulo) + '</h3>'
-    + (s.descripcion ? '<p style="font-size:12px;color:#6B7280;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + escapeHtml(s.descripcion) + '</p>' : '')
+    + '<h3 style="font-weight:600;color:#111827;font-size:14px;margin-bottom:4px;">' + escapeHtml(s.title) + '</h3>'
+    + (s.description ? '<p style="font-size:12px;color:#6B7280;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + escapeHtml(s.description) + '</p>' : '')
     + '</div>'
-    + '<pre class="code-block"><code class="' + (s.lenguaje || '') + '">' + codePreview + '</code></pre>'
+    + '<pre class="code-block"><code class="' + (s.language || '') + '">' + codePreview + '</code></pre>'
     + (tags ? '<div style="display:flex;flex-wrap:wrap;gap:4px;">' + tags + '</div>' : '')
     + (stars ? '<div style="display:flex;align-items:center;gap:4px;font-size:12px;color:#6B7280;"><span style="color:#F59E0B;">★</span>' + parseFloat(stars).toFixed(1) + '</div>' : '')
     + '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid #F3F4F6;">'
@@ -1277,7 +1228,7 @@ async function copySnippet(id) {
   const s = allSnippets.find(x => (x.id || x._id) == id);
   if (!s) return;
   try {
-    await navigator.clipboard.writeText(s.codigo || s.content || '');
+    await navigator.clipboard.writeText(s.code || s.content || '');
     showToast('Código copiado al portapapeles');
   } catch(e) {
     showToast('No se pudo copiar', 'error');
@@ -1308,8 +1259,8 @@ function openShareModal(snippet) {
   const id = snippet.id || snippet._id;
   const link = `${location.origin}${location.pathname}#snippet/${id}`;
   document.getElementById('share-link-input').value = link;
-  document.getElementById('share-preview-title').textContent = snippet.titulo || '';
-  document.getElementById('share-preview-desc').textContent = snippet.descripcion || '';
+  document.getElementById('share-preview-title').textContent = snippet.title || '';
+  document.getElementById('share-preview-desc').textContent = snippet.description || '';
   const tagsEl = document.getElementById('share-preview-tags');
   tagsEl.innerHTML = (snippet.tags || []).map(t => `<span class="px-2 py-0.5 rounded-full text-xs font-medium" style="background:#EEF2FF; color:#6366F1;">#${escapeHtml(t)}</span>`).join('');
   document.getElementById('modal-share').classList.remove('hidden');
@@ -1326,7 +1277,7 @@ async function copyShareLink() {
 function shareOn(platform) {
   if (!shareSnippetData) return;
   const url = encodeURIComponent(document.getElementById('share-link-input').value);
-  const text = encodeURIComponent(`${shareSnippetData.titulo} — ${shareSnippetData.descripcion || ''}`);
+  const text = encodeURIComponent(`${shareSnippetData.title} — ${shareSnippetData.description || ''}`);
   const links = {
     twitter: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${url}`,
@@ -1345,7 +1296,7 @@ async function loadTagSuggestions() {
   if (allTagSuggestions.length) return;
   try {
     const data = await apiFetch('/tags');
-    allTagSuggestions = (Array.isArray(data) ? data : (data.data || [])).map(t => t.nombre);
+    allTagSuggestions = (Array.isArray(data) ? data : (data.data || [])).map(t => t.name);
   } catch(e) {}
 }
 
@@ -1472,16 +1423,16 @@ function updateCodePreview() {
 async function loadSnippetForEdit(id) {
   try {
     const s = await apiFetch(`/snippets/${id}`);
-    document.getElementById('form-title').value = s.titulo || '';
-    document.getElementById('form-desc').value = s.descripcion || '';
-    document.getElementById('form-lang').value = s.lenguaje || '';
-    document.getElementById('form-category').value = s.categoria_id || (s.category && s.category.id) || '';
-    setTagsFromString((s.tags || []).map(t => typeof t === 'string' ? t : t.nombre).join(','));
+    document.getElementById('form-title').value = s.title || '';
+    document.getElementById('form-desc').value = s.description || '';
+    document.getElementById('form-lang').value = s.language || '';
+    document.getElementById('form-category').value = s.category_id || (s.category && s.category.id) || '';
+    setTagsFromString((s.tags || []).map(t => typeof t === 'string' ? t : t.name).join(','));
     if (aceEditor) {
-      aceEditor.setValue(s.codigo || '', -1);
-      setAceMode(s.lenguaje || '');
+      aceEditor.setValue(s.code || '', -1);
+      setAceMode(s.language || '');
     }
-    document.getElementById('form-public').checked = s.visibilidad === 'public';
+    document.getElementById('form-public').checked = s.visibility === 'public';
     updateToggleUI();
     updateCodePreview();
   } catch(err) {
@@ -1536,25 +1487,25 @@ async function loadSnippetDetail(id) {
   try {
     const s = normalizeSnippet(await apiFetch(`/snippets/${id}`));
     currentDetailSnippet = s;
-    const isOwn = currentUser && ((s.usuario_id || s.userId || (s.author && (s.author.id || s.author._id))) == (currentUser.id || currentUser._id));
+    const isOwn = currentUser && ((s.user_id || s.userId || (s.author && (s.author.id || s.author._id))) == (currentUser.id || currentUser._id));
     const tags = (s.tags || []).map(t => `<span class="px-2.5 py-1 rounded-full text-xs font-medium" style="background:#EEF2FF; color:#6366F1;">#${escapeHtml(t)}</span>`).join('');
     const author = s.author || s.user || {};
-    const authorName = author.nombre || author.username || 'Usuario';
-    const stars = s.calificacion_promedio || s.rating || 0;
-    const ratingCount = s.total_calificaciones || s.total_calificaciones || 0;
+    const authorName = author.name || author.username || 'Usuario';
+    const stars = s.avg_rating || s.rating || 0;
+    const ratingCount = s.rating_count || s.ratings_count || 0;
     container.innerHTML = `
       <div class="bg-white rounded-2xl shadow-sm p-6 mb-5">
         <div class="flex items-start justify-between mb-4">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-2">
               ${getPublicIcon(s)}
-              <h1 class="text-xl font-bold text-gray-900">${escapeHtml(s.titulo)}</h1>
+              <h1 class="text-xl font-bold text-gray-900">${escapeHtml(s.title)}</h1>
             </div>
-            ${getLangBadge(s.lenguaje || s.lang)}
+            ${getLangBadge(s.language || s.lang)}
           </div>
         </div>
-        ${s.descripcion ? `<p class="text-sm text-gray-500 mb-4">${escapeHtml(s.descripcion)}</p>` : ''}
-        <pre class="code-block-full rounded-xl mb-4"><code class="hljs ${s.lenguaje || ''}">${escapeHtml(s.codigo || s.content || '')}</code></pre>
+        ${s.description ? `<p class="text-sm text-gray-500 mb-4">${escapeHtml(s.description)}</p>` : ''}
+        <pre class="code-block-full rounded-xl mb-4"><code class="hljs ${s.language || ''}">${escapeHtml(s.code || s.content || '')}</code></pre>
         ${tags ? `<div class="flex flex-wrap gap-2 mb-4">${tags}</div>` : ''}
         <div class="flex items-center gap-3 py-3 border-t" style="border-color:#F3F4F6;">
           <div class="flex items-center gap-3 ${(author.id || author._id) ? 'cursor-pointer group' : ''}" ${(author.id || author._id) ? 'onclick="navigate(\'profile\', {id:' + (author.id || author._id) + '})"' : ''}>
@@ -1641,7 +1592,7 @@ async function loadComments(snippetId) {
       </h2>
       <!-- Post comment -->
       <div class="flex gap-3 mb-6">
-        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0" style="background:#6366F1;">${getInitials(currentUser && (currentUser.nombre || currentUser.email) || 'U')}</div>
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0" style="background:#6366F1;">${getInitials(currentUser && (currentUser.name || currentUser.email) || 'U')}</div>
         <div class="flex-1">
           <textarea id="new-comment-text" rows="2" placeholder="Escribe un comentario..."
             class="w-full px-3 py-2 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
@@ -1681,7 +1632,7 @@ function renderCommentsList(comments, snippetId) {
 function renderComment(c, snippetId, isReply) {
   const id = c.id;
   const author = c.user || {};
-  const authorName = author.nombre || author.username || 'Usuario';
+  const authorName = author.name || author.username || 'Usuario';
   const isOwn = currentUser && (author.id == (currentUser.id || currentUser._id));
   const liked = likedCommentIds.has(String(id));
   const replies = (c.replies || []).map(r => renderComment(r, snippetId, true)).join('');
@@ -1694,12 +1645,12 @@ function renderComment(c, snippetId, isReply) {
           <span class="text-xs font-semibold text-gray-800">${escapeHtml(authorName)}</span>
           <span class="text-xs text-gray-400">${timeAgo(c.created_at)}</span>
         </div>
-        <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(c.contenido)}</p>
+        <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(c.content)}</p>
       </div>
       <div class="flex items-center gap-3 mt-1.5 ml-1">
         <button onclick="toggleCommentLike(${id})" class="flex items-center gap-1 text-xs font-medium ${liked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'}" id="like-btn-${id}">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="${liked ? 'currentColor' : 'none'}" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-          <span id="like-count-${id}">${c.total_likes || 0}</span>
+          <span id="like-count-${id}">${c.likes_count || 0}</span>
         </button>
         ${!isReply ? `<button onclick="showReplyInput(${id}, ${snippetId})" class="text-xs text-gray-400 hover:text-indigo-500 font-medium">Responder</button>` : ''}
         ${isOwn ? `<button onclick="deleteComment(${id}, ${snippetId})" class="text-xs text-red-400 hover:text-red-600 font-medium">Eliminar</button>` : ''}
@@ -1758,7 +1709,7 @@ async function toggleCommentLike(commentId) {
   try {
     const data = await apiFetch(`/comments/${commentId}/like`, { method: 'POST' });
     const liked = data.liked;
-    const count = data.total_likes;
+    const count = data.likes_count;
     if (liked) likedCommentIds.add(String(commentId));
     else likedCommentIds.delete(String(commentId));
     const btn = document.getElementById(`like-btn-${commentId}`);
@@ -1786,7 +1737,7 @@ async function deleteComment(commentId, snippetId) {
 }
 
 async function copyCurrentSnippet() {
-  const c = currentDetailSnippet ? (currentDetailSnippet.codigo || '') : '';
+  const c = currentDetailSnippet ? (currentDetailSnippet.code || '') : '';
   try {
     await navigator.clipboard.writeText(c);
     showToast('Código copiado al portapapeles');
@@ -1821,7 +1772,7 @@ async function loadProfile(userId) {
     const data = await apiFetch(`/users/${userId}`);
     const user = data.user || data;
     const snippets = (data.snippets || []).map(normalizeSnippet);
-    const initials = getInitials(user.nombre || user.username || 'U');
+    const initials = getInitials(user.name || user.username || 'U');
     const profileUserId = user.id || user._id;
     const isOwnProfile = currentUser && (currentUser.id == profileUserId);
     container.innerHTML = `
@@ -1836,8 +1787,8 @@ async function loadProfile(userId) {
         <div class="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 overflow-hidden" style="background:#6366F1;" id="profile-avatar-container">
           ${user.avatar ? `<img src="/storage/${user.avatar}" class="w-full h-full object-cover" />` : initials}
         </div>
-        <h1 class="text-xl font-bold text-gray-900 mb-1" id="profile-display-name">${escapeHtml(user.nombre || user.username || '')}</h1>
-        ${user.biografia ? `<p class="text-sm text-gray-500 mb-4" id="profile-display-bio">${escapeHtml(user.biografia)}</p>` : '<div class="mb-4" id="profile-display-bio"></div>'}
+        <h1 class="text-xl font-bold text-gray-900 mb-1" id="profile-display-name">${escapeHtml(user.name || user.username || '')}</h1>
+        ${user.bio ? `<p class="text-sm text-gray-500 mb-4" id="profile-display-bio">${escapeHtml(user.bio)}</p>` : '<div class="mb-4" id="profile-display-bio"></div>'}
         ${(!isOwnProfile && currentUser && profileUserId) ? `
         <div class="mb-4">
           <button id="follow-btn-profile" onclick="toggleFollow(${profileUserId}, this)"
@@ -1864,7 +1815,7 @@ async function loadProfile(userId) {
             <div class="text-xs text-gray-500">Promedio ⭐</div>
           </div>
         </div>
-        ${user.puntuacion ? `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold" style="background:#EEF2FF; color:#6366F1;">🏆 Score: ${user.puntuacion}</span>` : ''}
+        ${user.ranking_score ? `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold" style="background:#EEF2FF; color:#6366F1;">🏆 Score: ${user.ranking_score}</span>` : ''}
       </div>
       <h2 class="text-lg font-semibold text-gray-900 mb-4">Snippets públicos</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="profile-grid">
@@ -1906,20 +1857,20 @@ async function loadRanking() {
       const medal = rank <= 3 ? `<span style="color:${medalColors[rank-1]}; font-size:1.2rem;">${'🥇🥈🥉'[rank-1]}</span>` : `<span class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-gray-500" style="background:#F3F4F6;">${rank}</span>`;
       if (currentRankTab === 'snippets') {
         const s = item.snippet || item;
-        const stars = s.calificacion_promedio || s.rating || 0;
+        const stars = s.avg_rating || s.rating || 0;
         return `
         <div class="bg-white rounded-xl shadow-sm p-4 mb-3 flex items-center gap-4 card-hover" style="border:1px solid #F3F4F6;">
           <div class="flex-shrink-0">${medal}</div>
           <div class="flex-1 min-w-0">
-            <div class="font-semibold text-gray-900 text-sm truncate">${escapeHtml(s.titulo || s.name || 'Sin título')}</div>
-            <div class="text-xs text-gray-500 mt-0.5">${escapeHtml((s.author && (s.author.nombre || s.author.username)) || '')}</div>
+            <div class="font-semibold text-gray-900 text-sm truncate">${escapeHtml(s.title || s.name || 'Sin título')}</div>
+            <div class="text-xs text-gray-500 mt-0.5">${escapeHtml((s.author && (s.author.name || s.author.username)) || '')}</div>
             <div class="flex items-center gap-2 mt-1">
-              ${getLangBadge(s.lenguaje || s.lang)}
+              ${getLangBadge(s.language || s.lang)}
             </div>
           </div>
           <div class="text-right flex-shrink-0">
             <div class="flex items-center gap-1 text-sm font-semibold text-gray-900"><span style="color:#F59E0B;">★</span>${parseFloat(stars).toFixed(1)}</div>
-            <div class="text-xs text-gray-400">${s.total_calificaciones || 0} valoraciones</div>
+            <div class="text-xs text-gray-400">${s.rating_count || 0} valoraciones</div>
           </div>
         </div>`;
       } else {
@@ -1927,9 +1878,9 @@ async function loadRanking() {
         return `
         <div class="bg-white rounded-xl shadow-sm p-4 mb-3 flex items-center gap-4 card-hover cursor-pointer" style="border:1px solid #F3F4F6;" onclick="navigate('profile', {id:'${u.id || u._id}'})">
           <div class="flex-shrink-0">${medal}</div>
-          <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0" style="background:#6366F1;">${getInitials(u.nombre || u.username || 'U')}</div>
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0" style="background:#6366F1;">${getInitials(u.name || u.username || 'U')}</div>
           <div class="flex-1 min-w-0">
-            <div class="font-semibold text-gray-900 text-sm">${escapeHtml(u.nombre || u.username || 'Usuario')}</div>
+            <div class="font-semibold text-gray-900 text-sm">${escapeHtml(u.name || u.username || 'Usuario')}</div>
             <div class="text-xs text-gray-500">${u.snippets_count || 0} snippets</div>
           </div>
           <div class="text-right flex-shrink-0">
@@ -1986,8 +1937,8 @@ async function runSearchDropdown(q) {
     const [users, snips] = await Promise.all([
       apiFetch('/users?q=' + encodeURIComponent(q)).catch(() => []),
       Promise.resolve(allSnippets.filter(s => {
-        const t = (s.titulo || '').toLowerCase();
-        const d = (s.descripcion || '').toLowerCase();
+        const t = (s.title || '').toLowerCase();
+        const d = (s.description || '').toLowerCase();
         const tg = (s.tags || []).join(' ').toLowerCase();
         return t.includes(q.toLowerCase()) || d.includes(q.toLowerCase()) || tg.includes(q.toLowerCase());
       }).slice(0, 5))
@@ -2009,15 +1960,15 @@ async function runSearchDropdown(q) {
     html += '<div class="px-4 pt-3 pb-1"><span class="text-xs font-semibold uppercase tracking-wide" style="color:#6366F1;">Usuarios</span></div>';
     html += userResults.map(u => {
       const uid = u.id || u._id;
-      const initials = getInitials(u.nombre || 'U');
+      const initials = getInitials(u.name || 'U');
       const avatar = u.avatar
         ? '<img src="/storage/' + escapeHtml(u.avatar) + '" class="w-full h-full object-cover rounded-full" />'
         : '<span class="text-white text-xs font-semibold">' + initials + '</span>';
       return '<div class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-indigo-50 transition-colors" onclick="closeSearchDropdown(); navigate(\'profile\', {id:' + uid + '})">'
         + '<div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden" style="background:#6366F1;">' + avatar + '</div>'
         + '<div class="min-w-0 flex-1">'
-        + '<div class="text-sm font-semibold text-gray-900">' + escapeHtml(u.nombre || '') + '</div>'
-        + (u.biografia ? '<div class="text-xs text-gray-500 truncate">' + escapeHtml(u.biografia) + '</div>' : '')
+        + '<div class="text-sm font-semibold text-gray-900">' + escapeHtml(u.name || '') + '</div>'
+        + (u.bio ? '<div class="text-xs text-gray-500 truncate">' + escapeHtml(u.bio) + '</div>' : '')
         + '<div class="text-xs text-gray-400">' + (u.followers_count || 0) + ' seguidores · ' + (u.snippets_count || 0) + ' snippets</div>'
         + '</div>'
         + '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>'
@@ -2030,12 +1981,12 @@ async function runSearchDropdown(q) {
     html += snippetResults.map(s => {
       const sid = s.id || s._id;
       const author = s.author || s.user || {};
-      const lang = s.lenguaje || s.lang || '';
+      const lang = s.language || s.lang || '';
       return '<div class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors" onclick="closeSearchDropdown(); navigate(\'detail\', {id:' + sid + '})">'
         + '<div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold text-white" style="background:#111827;">' + escapeHtml((lang.slice(0,3) || '···').toUpperCase()) + '</div>'
         + '<div class="min-w-0 flex-1">'
-        + '<div class="text-sm font-medium text-gray-900 truncate">' + escapeHtml(s.titulo || '') + '</div>'
-        + '<div class="text-xs text-gray-400">' + escapeHtml(author.nombre || '') + (lang ? ' · ' + lang : '') + '</div>'
+        + '<div class="text-sm font-medium text-gray-900 truncate">' + escapeHtml(s.title || '') + '</div>'
+        + '<div class="text-xs text-gray-400">' + escapeHtml(author.name || '') + (lang ? ' · ' + lang : '') + '</div>'
         + '</div>'
         + '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>'
         + '</div>';
@@ -2128,12 +2079,12 @@ function renderUserCard(user) {
   const uid = user.id || user._id;
   const avatar = user.avatar
     ? '<img src="/storage/' + escapeHtml(user.avatar) + '" class="w-full h-full object-cover rounded-full" />'
-    : '<span class="text-white text-sm font-semibold">' + getInitials(user.nombre || 'U') + '</span>';
+    : '<span class="text-white text-sm font-semibold">' + getInitials(user.name || 'U') + '</span>';
   return '<div class="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-indigo-50 transition-colors" onclick="closeModal(\'follow-list\'); navigate(\'profile\', {id:' + uid + '})">'
     + '<div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden" style="background:#6366F1;">' + avatar + '</div>'
     + '<div class="min-w-0 flex-1">'
-    + '<div class="text-sm font-semibold text-gray-900">' + escapeHtml(user.nombre || user.username || '') + '</div>'
-    + (user.biografia ? '<div class="text-xs text-gray-500 truncate">' + escapeHtml(user.biografia) + '</div>' : '')
+    + '<div class="text-sm font-semibold text-gray-900">' + escapeHtml(user.name || user.username || '') + '</div>'
+    + (user.bio ? '<div class="text-xs text-gray-500 truncate">' + escapeHtml(user.bio) + '</div>' : '')
     + '<div class="text-xs text-gray-400">' + (user.followers_count || 0) + ' seguidores · ' + (user.snippets_count || 0) + ' snippets</div>'
     + '</div>'
     + '</div>';
@@ -2151,7 +2102,7 @@ document.querySelectorAll('.modal-backdrop').forEach(m => {
 
 // ── Profile edit ──────────────────────────────────────────────────────────────
 function openEditProfileModal() {
-  document.getElementById('edit-name').value = currentUser.nombre || '';
+  document.getElementById('edit-name').value = currentUser.name || '';
   document.getElementById('edit-bio').value = currentUser.bio || '';
   document.getElementById('edit-password').value = '';
   document.getElementById('edit-avatar').value = '';
@@ -2202,7 +2153,7 @@ async function handleSaveProfile() {
     const nameEl = document.getElementById('profile-display-name');
     const bioEl = document.getElementById('profile-display-bio');
     const avatarEl = document.getElementById('profile-avatar-container');
-    if (nameEl) nameEl.textContent = currentUser.nombre || '';
+    if (nameEl) nameEl.textContent = currentUser.name || '';
     if (bioEl) bioEl.textContent = currentUser.bio || '';
     if (avatarEl && currentUser.avatar) {
       avatarEl.innerHTML = `<img src="/storage/${currentUser.avatar}" class="w-full h-full object-cover" />`;
