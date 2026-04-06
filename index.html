@@ -51,6 +51,11 @@
     .star.filled { color: #F59E0B; }
     .card-hover { transition: box-shadow 0.2s; }
     .card-hover:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+    .code-wrapper { position: relative; }
+    .code-copy-btn { position: absolute; top: 8px; right: 8px; z-index: 10; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; border: none; cursor: pointer; opacity: 0; transition: opacity 0.15s, background 0.15s; background: rgba(255,255,255,0.15); color: #e5e7eb; backdrop-filter: blur(4px); }
+    .code-wrapper:hover .code-copy-btn { opacity: 1; }
+    .code-copy-btn:hover { background: rgba(255,255,255,0.28); color: #fff; }
+    .code-copy-btn.copied { background: #10B981; color: #fff; opacity: 1; }
     select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; background-size: 18px; padding-right: 36px !important; }
   </style>
 </head>
@@ -648,7 +653,7 @@
 const _host = window.location.hostname;
 const API_BASE = (_host === 'localhost' || _host === '127.0.0.1' || _host.startsWith('192.168.') || _host.startsWith('10.'))
   ? '/api'
-  : 'http://159.89.190.205/api';   // ← cambiar a https://subdominio.duckdns.org/api cuando tengas dominio
+  : 'https://api-g4.senaticttc.com/api';   // ← cambiar a https://subdominio.duckdns.org/api cuando tengas dominio
 let currentUser = null;
 let currentTab = 'my';
 let currentRankTab = 'snippets';
@@ -660,6 +665,23 @@ let shareSnippetData = null;
 let searchTimer = null;
 let currentDetailSnippetId = null;
 let currentDetailSnippet = null;
+let currentUserRating = 0;
+
+// ── Clipboard helper (funciona en HTTP y HTTPS) ───────────────────────────────
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch(e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); return true; } catch(e2) { return false; } finally { ta.remove(); }
+  }
+}
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 function getToken() { return localStorage.getItem('token'); }
@@ -705,6 +727,8 @@ function navigate(route, params = {}) {
     document.getElementById('create-subtitle').textContent = 'Crea un nuevo fragmento de código';
     loadTagSuggestions();
     setTimeout(initAceEditor, 50);
+    // Recargar categorías si no están cargadas aún
+    if (document.getElementById('form-category').options.length <= 1) loadCategories();
   } else if (route === 'edit') {
     showApp();
     showView('create');
@@ -808,6 +832,8 @@ async function loadCategories() {
   try {
     const cats = await apiFetch('/categories');
     const sel = document.getElementById('form-category');
+    // Limpiar opciones previas (excepto "Sin categoría")
+    while (sel.options.length > 1) sel.remove(1);
     const items = Array.isArray(cats) ? cats : (cats.data || []);
     items.forEach(c => {
       const opt = document.createElement('option');
@@ -815,7 +841,7 @@ async function loadCategories() {
       opt.textContent = c.nombre;
       sel.appendChild(opt);
     });
-  } catch(e) {}
+  } catch(e) { console.warn('No se pudieron cargar categorías:', e); }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -1256,7 +1282,7 @@ function renderCommunityCard(s) {
     + '<h3 style="font-weight:600;color:#111827;font-size:14px;margin-bottom:4px;">' + escapeHtml(s.titulo) + '</h3>'
     + (s.descripcion ? '<p style="font-size:12px;color:#6B7280;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">' + escapeHtml(s.descripcion) + '</p>' : '')
     + '</div>'
-    + '<pre class="code-block"><code class="' + (s.lenguaje || '') + '">' + codePreview + '</code></pre>'
+    + '<div class="code-wrapper"><button class="code-copy-btn" onclick="copySnippet(\'' + id + '\',this)" title="Copiar código"><svg xmlns="http://www.w3.org/2000/svg" style="width:12px;height:12px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>Copiar</button><pre class="code-block"><code class="' + (s.lenguaje || '') + '">' + codePreview + '</code></pre></div>'
     + (tags ? '<div style="display:flex;flex-wrap:wrap;gap:4px;">' + tags + '</div>' : '')
     + (stars ? '<div style="display:flex;align-items:center;gap:4px;font-size:12px;color:#6B7280;"><span style="color:#F59E0B;">★</span>' + parseFloat(stars).toFixed(1) + '</div>' : '')
     + '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid #F3F4F6;">'
@@ -1273,13 +1299,14 @@ function renderCommunityCard(s) {
 }
 
 // ── Snippet actions ───────────────────────────────────────────────────────────
-async function copySnippet(id) {
+async function copySnippet(id, btn) {
   const s = allSnippets.find(x => (x.id || x._id) == id);
   if (!s) return;
-  try {
-    await navigator.clipboard.writeText(s.codigo || s.content || '');
-    showToast('Código copiado al portapapeles');
-  } catch(e) {
+  const ok = await copyToClipboard(s.codigo || s.content || '');
+  if (ok) {
+    showToast('Código copiado');
+    if (btn) { btn.classList.add('copied'); btn.innerHTML = '✓ Copiado'; setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" style="width:12px;height:12px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>Copiar'; }, 2000); }
+  } else {
     showToast('No se pudo copiar', 'error');
   }
 }
@@ -1295,11 +1322,13 @@ async function confirmDelete() {
     await apiFetch(`/snippets/${snippetToDelete}`, { method: 'DELETE' });
     showToast('Snippet eliminado');
     closeModal('delete');
-    loadSnippets();
+    snippetToDelete = null;
+    navigate('feed');
+    switchTab('my');
   } catch(err) {
     showToast(err.message || 'Error al eliminar', 'error');
+    snippetToDelete = null;
   }
-  snippetToDelete = null;
 }
 
 // ── Share modal ───────────────────────────────────────────────────────────────
@@ -1317,10 +1346,9 @@ function openShareModal(snippet) {
 
 async function copyShareLink() {
   const val = document.getElementById('share-link-input').value;
-  try {
-    await navigator.clipboard.writeText(val);
-    showToast('Enlace copiado');
-  } catch(e) { showToast('No se pudo copiar', 'error'); }
+  const ok = await copyToClipboard(val);
+  if (ok) showToast('Enlace copiado');
+  else showToast('No se pudo copiar', 'error');
 }
 
 function shareOn(platform) {
@@ -1554,7 +1582,13 @@ async function loadSnippetDetail(id) {
           </div>
         </div>
         ${s.descripcion ? `<p class="text-sm text-gray-500 mb-4">${escapeHtml(s.descripcion)}</p>` : ''}
-        <pre class="code-block-full rounded-xl mb-4"><code class="hljs ${s.lenguaje || ''}">${escapeHtml(s.codigo || s.content || '')}</code></pre>
+        <div class="code-wrapper">
+          <button class="code-copy-btn" onclick="copyCurrentSnippet(this)" title="Copiar código">
+            <svg xmlns="http://www.w3.org/2000/svg" style="width:12px;height:12px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            Copiar
+          </button>
+          <pre class="code-block-full rounded-xl mb-4"><code class="hljs ${s.lenguaje || ''}">${escapeHtml(s.codigo || s.content || '')}</code></pre>
+        </div>
         ${tags ? `<div class="flex flex-wrap gap-2 mb-4">${tags}</div>` : ''}
         <div class="flex items-center gap-3 py-3 border-t" style="border-color:#F3F4F6;">
           <div class="flex items-center gap-3 ${(author.id || author._id) ? 'cursor-pointer group' : ''}" ${(author.id || author._id) ? 'onclick="navigate(\'profile\', {id:' + (author.id || author._id) + '})"' : ''}>
@@ -1573,7 +1607,7 @@ async function loadSnippetDetail(id) {
         <div class="py-3 border-t" style="border-color:#F3F4F6;">
           <p class="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Valorar este snippet</p>
           <div class="flex gap-1" id="star-rating">
-            ${[1,2,3,4,5].map(n => `<span class="star" onclick="rateSnippet('${id}', ${n})" onmouseover="hoverStars(${n})" onmouseout="resetStars(${s.user_rating || 0})">★</span>`).join('')}
+            ${[1,2,3,4,5].map(n => `<span class="star" onclick="rateSnippet('${id}', ${n})" onmouseover="hoverStars(${n})" onmouseout="resetStars()">★</span>`).join('')}
           </div>
         </div>
         <!-- Actions -->
@@ -1612,7 +1646,8 @@ async function loadSnippetDetail(id) {
         </div>
       </div>`;
     container.querySelectorAll('pre code').forEach(b => { try { hljs.highlightElement(b); } catch(e){} });
-    resetStars(s.user_rating || 0);
+    currentUserRating = s.user_rating || 0;
+    resetStars();
     // Load follow button state for detail view
     if (!isOwn && (author.id || author._id)) {
       loadFollowBtnState(author.id || author._id, 'follow-btn-detail');
@@ -1785,12 +1820,20 @@ async function deleteComment(commentId, snippetId) {
   }
 }
 
-async function copyCurrentSnippet() {
+async function copyCurrentSnippet(btn) {
   const c = currentDetailSnippet ? (currentDetailSnippet.codigo || '') : '';
-  try {
-    await navigator.clipboard.writeText(c);
-    showToast('Código copiado al portapapeles');
-  } catch(e) { showToast('No se pudo copiar', 'error'); }
+  const ok = await copyToClipboard(c);
+  if (ok) {
+    showToast('Código copiado');
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.classList.add('copied');
+      btn.innerHTML = '✓ Copiado';
+      setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 2000);
+    }
+  } else {
+    showToast('No se pudo copiar', 'error');
+  }
 }
 
 function hoverStars(n) {
@@ -1799,15 +1842,17 @@ function hoverStars(n) {
   });
 }
 function resetStars(val) {
+  if (val !== undefined) currentUserRating = val;
   document.querySelectorAll('#star-rating .star').forEach((s, i) => {
-    s.classList.toggle('filled', i < val);
+    s.classList.toggle('filled', i < currentUserRating);
   });
 }
 async function rateSnippet(id, rating) {
   try {
     await apiFetch(`/snippets/${id}/rate`, { method: 'POST', body: JSON.stringify({ stars: rating }) });
     showToast(`Valoración de ${rating} ★ enviada`);
-    resetStars(rating);
+    currentUserRating = rating;
+    resetStars();
   } catch(err) {
     showToast(err.message || 'Error al valorar', 'error');
   }
