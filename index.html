@@ -1181,8 +1181,8 @@ function renderMyCard(s) {
     ${s.descripcion ? `<p class="text-xs text-gray-500 line-clamp-2">${escapeHtml(s.descripcion)}</p>` : ''}
     <pre class="code-block"><code class="${s.lenguaje || ''}">${codePreview}</code></pre>
     ${tags ? `<div class="flex flex-wrap gap-1">${tags}</div>` : ''}
-    <div class="flex items-center justify-between pt-1 border-t" style="border-color:#F3F4F6;">
-      <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t" style="border-color:#F3F4F6;">
+      <div class="flex flex-wrap items-center gap-2 min-w-0">
         <button onclick="copySnippet('${id}')"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border text-gray-600 hover:bg-gray-50"
           style="border-color:#E5E7EB;">
@@ -1202,7 +1202,7 @@ function renderMyCard(s) {
           Exportar
         </button>
       </div>
-      <div class="flex items-center gap-1">
+      <div class="flex flex-wrap items-center gap-1">
         <button onclick="navigate('edit', {id:'${id}'})" title="Editar"
           class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
