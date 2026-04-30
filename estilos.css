@@ -1,0 +1,132 @@
+/* =========================
+   PALETA & GLOBAL
+   ========================= */
+:root {
+    --bg: #050814;
+    --card: #0f172a;
+    --card-border: #1e293b;
+    --accent: #38bdf8;      /* celeste lindo */
+    --accent-soft: #0ea5e9;
+    --accent-yellow: #facc15;
+    --accent-green: #4ade80;
+    --text-main: #e5e7eb;
+    --text-muted: #9ca3af;
+}
+
+body {
+    background: radial-gradient(circle at top, #020617 0, #020617 40%, #000 100%);
+    color: var(--text-main);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* =========================
+   TÍTULOS
+   ========================= */
+.titulo-dashboard {
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.subtitulo-dashboard {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+/* =========================
+   TARJETAS KPI
+   ========================= */
+.kpi-card {
+    background: linear-gradient(145deg, #020617, #020617 60%, #0b1120);
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    box-shadow: 0 18px 35px rgba(15, 23, 42, 0.9);
+    position: relative;
+    overflow: hidden;
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s;
+    min-height: 110px;
+}
+
+.kpi-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 55%);
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 25px 45px rgba(15, 23, 42, 1);
+    border-color: var(--accent-soft);
+}
+
+.kpi-card .card-body {
+    position: relative;
+    z-index: 1;
+}
+
+.kpi-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+
+.kpi-value {
+    margin-top: 6px;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.kpi-extra {
+    font-size: 0.9rem;
+    color: var(--accent-yellow);
+    margin-top: -2px;
+}
+
+.kpi-icon {
+    position: absolute;
+    right: 12px;
+    bottom: 8px;
+    font-size: 1.6rem;
+    color: rgba(148, 163, 184, 0.7);
+}
+
+/* =========================
+   GRÁFICOS
+   ========================= */
+.chart-card {
+    background: #020617;
+    border-radius: 14px;
+    border: 1px solid rgba(30, 64, 175, 0.6);
+    box-shadow: 0 18px 35px rgba(15, 23, 42, 0.9);
+}
+
+.chart-header {
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--accent);
+    border-bottom: 1px solid rgba(51, 65, 85, 0.9);
+    background: linear-gradient(90deg, rgba(15, 23, 42, 0.95), rgba(30, 64, 175, 0.3));
+}
+
+.card-body {
+    padding: 14px;
+}
+
+canvas {
+    background: radial-gradient(circle at top, #020617, #000);
+    border-radius: 10px;
+}
+
+/* =========================
+   FOOTER
+   ========================= */
+.texto-footer {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
