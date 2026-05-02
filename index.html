@@ -132,6 +132,42 @@
         </div>
     </section>
 
+    <!-- NUEVA SECCIÓN: BIOMETRÍA Y MATRIZ DE CONFUSIÓN -->
+    <section class="row g-3 mb-3">
+        <div class="col-md-12">
+            <div class="card chart-card">
+                <div class="card-header chart-header d-flex justify-content-between align-items-center">
+                    <span>Informe de Biometría Conductor - SENATI Lab (Redes LSTM)</span>
+                    <span class="badge bg-primary" id="kpi-total">0 Muestras</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Mini KPIs de Biometría -->
+                        <div class="col-md-3 border-end">
+                            <div class="p-3 text-center">
+                                <div class="kpi-label">Piloto Identificado</div>
+                                <div class="h4 fw-bold text-primary" id="kpi-pilot">---</div>
+                            </div>
+                            <div class="p-3 text-center border-top">
+                                <div class="kpi-label">Confianza del Análisis</div>
+                                <div class="h4 fw-bold" id="kpi-conf">0%</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Contenedor de la Matriz -->
+                        <div class="col-md-9 d-flex justify-content-center align-items-center p-4">
+                            <div id="matrix-grid" class="matrix-container-visual">
+                                <!-- La matriz se generará aquí mediante logica.js -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
     <!-- PIE -->
     <footer class="text-center mt-3 texto-footer">
         Actualiza automáticamente cada 5 segundos · Backend: Laravel · Frontend: HTML + JS + Chart.js

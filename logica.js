@@ -177,3 +177,65 @@ function renderConteoJugadores(list){
 }
 
 cargarDashboard();
+
+async function actualizarBiometria() {
+    try {
+        const response = await fetch('https://api-g4.senaticttc.com/api/biometria');
+        const data = await response.json();
+
+        // 1. Extraer los datos con los nombres correctos del backend Flask
+        const pilotoDetectado = data.identidad_detectada || "--";
+        const confianza = data.confianza || 0;
+        const pilotoReal = data.piloto_en_db || "--";
+        const esMatch = data.match;
+
+        // 2. Actualizar los elementos del DOM (KPIs)
+        const elPilot = document.getElementById('kpi-pilot');
+        const elConf = document.getElementById('kpi-conf');
+        const elTotal = document.getElementById('kpi-total');
+
+        if (elPilot) elPilot.innerText = pilotoDetectado;
+        if (elConf) elConf.innerText = (confianza * 100).toFixed(1) + '%';
+        
+        if (elTotal) {
+            elTotal.innerText = esMatch ? "✓ Identidad Verificada" : "⚠ Alerta: Intruso Detectado";
+            elTotal.style.color = esMatch ? "#10b981" : "#ef4444"; // Verde si coincide, Rojo si no
+        }
+
+        // 3. Renderizar Matriz (Solo si el API envía 'matrix' y 'pilotos')
+        // Si tu Flask aún no envía la matriz, esta parte dará error. 
+        // Por ahora, verifiquemos si existen los datos antes de dibujar:
+        if (data.pilotos && data.matrix) {
+            const grid = document.getElementById('matrix-grid');
+            if (!grid) return;
+
+            const { pilotos, matrix } = data;
+            const maxVal = Math.max(...matrix.flat()) || 1;
+
+            let html = '<div></div><div></div>'; 
+            pilotos.forEach(p => html += `<div class="name-tag x">${p}</div>`);
+            html += `<div class="label-vertical">Real</div>`;
+
+            matrix.forEach((row, i) => {
+                html += `<div class="name-tag y">${pilotos[i]}</div>`;
+                row.forEach(val => {
+                    const intensity = val > 0 ? (0.1 + (val / maxVal) * 0.9) : 0;
+                    const bgColor = val > 0 ? `rgba(17, 141, 255, ${intensity})` : '#fdfdfd';
+                    const textColor = intensity > 0.5 ? 'white' : '#333';
+                    html += `<div class="cell" style="background-color: ${bgColor}; color: ${textColor};">${val > 0 ? val : ''}</div>`;
+                });
+            });
+
+            html += `<div class="axis-title-bottom">Predicción del Modelo</div>`;
+            grid.innerHTML = html;
+        }
+
+    } catch (error) {
+        console.error("Error cargando biometría:", error);
+    }
+}
+// Llama a esta función dentro de tu setInterval de 5 segundos
+setInterval(() => {
+    // ... tus otras funciones de actualización ...
+    actualizarBiometria();
+}, 5000);

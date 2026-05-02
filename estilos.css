@@ -130,3 +130,47 @@ canvas {
     font-size: 0.85rem;
     color: var(--text-muted);
 }
+
+/* Estilos para la Matriz de Confusión */
+.matrix-container-visual {
+    display: grid;
+    grid-template-columns: 40px 120px repeat(3, 70px); /* Ajustado para tus 3 pilotos */
+    align-items: center;
+    gap: 2px;
+}
+
+.label-vertical {
+    grid-row: 2 / 5;
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.name-tag { font-size: 0.75rem; font-weight: 600; padding: 5px; }
+.name-tag.x { text-align: center; }
+.name-tag.y { text-align: right; padding-right: 10px; }
+
+.cell {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #eee;
+    font-weight: bold;
+    transition: transform 0.2s;
+}
+
+.axis-title-bottom {
+    grid-column: 3 / 6;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: #666;
+    padding-top: 15px;
+    text-transform: uppercase;
+}
