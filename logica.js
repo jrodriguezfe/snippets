@@ -180,7 +180,7 @@ cargarDashboard();
 
 async function actualizarBiometria() {
     try {
-        const response = await fetch('https://api-g4.senaticttc.com/api/biometria');
+        const response = await fetch('http://159.89.190.205:5000/api/biometria');
         const data = await response.json();
 
         // 1. Extraer los datos con los nombres correctos del backend Flask
