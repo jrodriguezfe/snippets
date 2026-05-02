@@ -212,6 +212,9 @@ async function actualizarBiometria() {
             const { pilotos, matrix } = data;
             const maxVal = Math.max(...matrix.flat()) || 1;
 
+            // Actualizar la variable CSS para que la tabla se adapte a cualquier cantidad de pilotos
+            grid.style.setProperty('--num-pilotos', pilotos.length);
+
             let html = '<div></div><div></div>'; 
             pilotos.forEach(p => html += `<div class="name-tag x">${p}</div>`);
             html += `<div class="label-vertical">Real</div>`;

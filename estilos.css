@@ -134,7 +134,7 @@ canvas {
 /* Estilos para la Matriz de Confusión */
 .matrix-container-visual {
     display: grid;
-    grid-template-columns: 40px 120px repeat(3, 70px); /* Ajustado para tus 3 pilotos */
+    grid-template-columns: 40px 120px repeat(var(--num-pilotos, 3), 70px);
     align-items: center;
     gap: 2px;
 }
